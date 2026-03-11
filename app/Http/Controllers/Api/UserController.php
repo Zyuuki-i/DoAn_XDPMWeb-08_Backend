@@ -6,89 +6,95 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
-    public function index(Request $request): JsonResponse
+    public function index(): JsonResponse
     {
         $users = User::orderBy('id', 'asc')
             ->get()
-            ->map(function (User $user) {
-                return $this->transformUser($user);
-            });
+            ->map(fn($user) => $this->transformUser($user));
 
         return response()->json([
-            'data' => $users,
+            'data' => $users
         ]);
     }
 
     public function show(User $user): JsonResponse
     {
         return response()->json([
-            'data' => $this->transformUser($user),
+            'data' => $this->transformUser($user)
         ]);
     }
 
-    /**
-     * Store a newly created user.
-     */
     public function store(Request $request): JsonResponse
     {
         $data = $this->validateUser($request);
 
+        // default role
+        $data['role'] = $data['role'] ?? 'customer';
+
         $user = User::create($data);
 
         return response()->json([
-            'data' => $this->transformUser($user),
+            'data' => $this->transformUser($user)
         ], 201);
     }
 
-    /**
-     * Update an existing user.
-     */
     public function update(Request $request, User $user): JsonResponse
     {
         $data = $this->validateUser($request, $user->id);
 
+        // hash password nếu có update
+        if (isset($data['password'])) {
+            $data['password'] = Hash::make($data['password']);
+        }
+
         $user->update($data);
 
         return response()->json([
-            'data' => $this->transformUser($user),
+            'data' => $this->transformUser($user)
         ]);
     }
 
-    /**
-     * Remove a user from storage.
-     */
     public function destroy(User $user): JsonResponse
     {
         $user->delete();
 
-        return response()->json(null, 204);
+        return response()->json([
+            'message' => 'User deleted successfully'
+        ]);
     }
 
-    /**
-     * Validate incoming user data. When updating, pass the user id to
-     * ignore it in unique checks.
-     */
     private function validateUser(Request $request, ?int $ignoreId = null): array
     {
-        $rules = [
-            'username' => ['required', 'string', 'max:255', 'unique:users,username'.($ignoreId ? ",$ignoreId" : '')],
-            'password' => ['required', 'string', 'min:6'],
-            'email' => ['required', 'email', 'max:255'],
+        return $request->validate([
+            'username' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('users')->ignore($ignoreId)
+            ],
+
+            'email' => [
+                'required',
+                'email',
+                'max:255',
+                Rule::unique('users')->ignore($ignoreId)
+            ],
+
+            'password' => $ignoreId
+                ? ['sometimes', 'string', 'min:6']
+                : ['required', 'string', 'min:6'],
+
             'full_name' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:50'],
             'address' => ['nullable', 'string', 'max:500'],
-            'role' => ['required', 'string', 'max:50'],
-        ];
 
-        // when updating we allow password to be omitted
-        if ($ignoreId) {
-            $rules['password'] = ['sometimes', 'string', 'min:6'];
-        }
-
-        return $request->validate($rules);
+            'role' => ['sometimes', 'in:admin,customer'],
+        ]);
     }
 
     private function transformUser(User $user): array
@@ -96,13 +102,12 @@ class UserController extends Controller
         return [
             'id' => $user->id,
             'username' => $user->username,
-            'password' => $user->password,
             'email' => $user->email,
             'full_name' => $user->full_name,
             'phone' => $user->phone,
             'address' => $user->address,
             'role' => $user->role,
-            'created_at' => $user->created_at,
+            'created_at' => $user->created_at?->toDateTimeString(),
         ];
     }
-}   
+}
