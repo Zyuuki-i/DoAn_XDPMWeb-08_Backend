@@ -34,7 +34,6 @@ class User extends Authenticatable
      */
     protected $hidden = [
         'password',
-        'remember_token',
     ];
 
     /**
@@ -46,7 +45,6 @@ class User extends Authenticatable
     // definition was never used which meant the password field wasn't
     // automatically hashed when the model was mass‑assigned.
     protected $casts = [
-        'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
 }
