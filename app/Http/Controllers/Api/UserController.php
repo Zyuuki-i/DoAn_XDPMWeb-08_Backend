@@ -98,9 +98,6 @@ class UserController extends Controller
             'phone' => ['nullable', 'string', 'max:50'],
             'address' => ['nullable', 'string', 'max:500'],
 
-            // keep the list in sync with the enum in the database.
-            // if you still have records with role 'user' either update them
-            // or include 'user' here.
             'role' => ['sometimes', Rule::in(['admin','customer'])],
         ]);
     }
@@ -110,6 +107,7 @@ class UserController extends Controller
         return [
             'id' => $user->id,
             'username' => $user->username,
+            'password' => $user->password,
             'email' => $user->email,
             'full_name' => $user->full_name,
             'phone' => $user->phone,
