@@ -36,11 +36,6 @@ class UserController extends Controller
         // default role when the client didn't send one
         $data['role'] = $data['role'] ?? 'customer';
 
-        // hash the password just as we do in update()
-        if (isset($data['password'])) {
-            $data['password'] = Hash::make($data['password']);
-        }
-
         $user = User::create($data);
 
         return response()->json([
@@ -51,11 +46,6 @@ class UserController extends Controller
     public function update(Request $request, User $user): JsonResponse
     {
         $data = $this->validateUser($request, $user->id);
-
-        // hash password nếu có update
-        if (isset($data['password'])) {
-            $data['password'] = Hash::make($data['password']);
-        }
 
         $user->update($data);
 
@@ -107,7 +97,6 @@ class UserController extends Controller
         return [
             'id' => $user->id,
             'username' => $user->username,
-            'password' => $user->password,
             'email' => $user->email,
             'full_name' => $user->full_name,
             'phone' => $user->phone,
