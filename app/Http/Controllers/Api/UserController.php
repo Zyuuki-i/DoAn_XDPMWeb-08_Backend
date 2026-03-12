@@ -33,8 +33,13 @@ class UserController extends Controller
     {
         $data = $this->validateUser($request);
 
-        // default role
+        // default role when the client didn't send one
         $data['role'] = $data['role'] ?? 'customer';
+
+        // hash the password just as we do in update()
+        if (isset($data['password'])) {
+            $data['password'] = Hash::make($data['password']);
+        }
 
         $user = User::create($data);
 
@@ -93,7 +98,10 @@ class UserController extends Controller
             'phone' => ['nullable', 'string', 'max:50'],
             'address' => ['nullable', 'string', 'max:500'],
 
-            'role' => ['sometimes', 'in:admin,customer'],
+            // keep the list in sync with the enum in the database.
+            // if you still have records with role 'user' either update them
+            // or include 'user' here.
+            'role' => ['sometimes', Rule::in(['admin','customer'])],
         ]);
     }
 
