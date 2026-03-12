@@ -33,7 +33,6 @@ class UserController extends Controller
     {
         $data = $this->validateUser($request);
 
-        // default role when the client didn't send one
         $data['role'] = $data['role'] ?? 'customer';
 
         $user = User::create($data);
@@ -43,15 +42,22 @@ class UserController extends Controller
         ], 201);
     }
 
-    public function update(Request $request, User $user): JsonResponse
+    public function update(Request $request, User $user)
     {
-        $data = $this->validateUser($request, $user->id);
+        // try {
+            $data = $this->validateUser($request, $user->id);
 
-        $user->update($data);
+            $user->update($data);
 
-        return response()->json([
-            'data' => $this->transformUser($user)
-        ]);
+            return response()->json([
+                'data' => $this->transformUser($user)
+            ]);
+
+        // } catch (\Throwable $e) {
+        //     return response()->json([
+        //         'error' => $e->getMessage()
+        //     ], 500);
+        // }
     }
 
     public function destroy(User $user): JsonResponse
@@ -87,6 +93,7 @@ class UserController extends Controller
             'full_name' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:50'],
             'address' => ['nullable', 'string', 'max:500'],
+            'created_at' => ['nullable', 'date'],
 
             'role' => ['sometimes', Rule::in(['admin','customer'])],
         ]);
